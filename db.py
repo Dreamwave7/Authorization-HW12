@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 SQLKEY = "postgresql+psycopg2://dkwvkeys:aD0Tydu8H8DSKRQKPMEIAVSLcKK-a6CM@tyke.db.elephantsql.com/dkwvkeys"
 
-engine = create_engine(SQLKEY,  connect_args={"check_same_thread": False})
+engine = create_engine(SQLKEY,)
 
 session = sessionmaker(autoflush=False, autocommit = False, bind=engine)
 
