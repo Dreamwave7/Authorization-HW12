@@ -43,8 +43,8 @@ async def root():
 
 
 @app.get("/secret")
-async def read_item(current)
-
+async def read_item(current_user:User = Depends(get_current_user)):
+    return {"message": "secret router", "owner": current_user.email}
 
 
 
