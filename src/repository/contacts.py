@@ -6,70 +6,27 @@ from src.database.models import *
 from src.schemas import *
 from datetime import datetime, timedelta
 
+from libgravatar import Gravatar
 
-async def get_contacts(db:Session):
-    q = db.query(Contacts).all()
-    return q
+async def get_user_by_email(email:str, db:Session)->User:
+    return db.query(User).filter(User.email == email).first()
 
-async def get_contact(contact_id:int, db:Session):
-    res = db.query(Contacts).filter(Contacts.id == contact_id).first()
-    return res
+async def create_user(body:UserModel, db:Session)->User:
+    avatar = None
+    try:
+        g = Gravatar(body.email)
+        avatar = g.get_image()
+    except Exception as e:
+        print(e)
 
-async def create_new_contact(body:ContactModel, db: Session):
-    user = Contacts(name = body.name, lastname = body.lastname, email = body.email, phone = body.phone, birthday = body.birthday)
-    db.add(user)
+    new_user = User(**body.dict(), avatar = avatar)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(new_user)
+    return new_user
 
-async def change_contact(body:ContactUpdate, db:Session):
-    res = db.query(Contacts).filter(Contacts.name == body.name).first()
-    res.birthday = body.birthday
-    res.email = body.email
-    res.phone = body.phone
+async def update_token(user:User, token:str | None, db:Session)->None:
+    user.refresh_token = token
     db.commit()
-    db.refresh(res)
-    return  res
 
-async def delete(name:ContactName, db:Session):
-    res = db.query(Contacts).filter(Contacts.name == name.name).first()
-    db.delete(res)
-    db.commit()
-    return res
-
-async def find_name(username:ContactName, db:Session):
-    res = db.query(Contacts).filter(Contacts.name == username.name).first()
-    return res
-
-async def find_birthday(birthday:ContactBirthday, db :Session):
-    res = db.query(Contacts).filter(Contacts.birthday == birthday.birthday).all()
-    return res
-
-async def find_lastname(lastname:ContactLastname, db:Session):
-    res = db.query(Contacts).filter(Contacts.lastname == lastname.lastname).all()
-    return res
-
-async def birthdays_7(db:Session):
-    users = db.query(Contacts).all()
-    birthdays_list = []
-
-    for user in users:
-        birth = verify_date(user.birthday)
-        if birth:
-            birthdays_list.append(user)
-        else:
-            continue
-    return birthdays_list
-
-
-
-def verify_date(date:str):
-    current = datetime.now().date()
-    year = current.year
-    current_7 = current + timedelta(days=7)
-    user_date = datetime.strptime(date, "%d.%m.%Y").date().replace(year=year)
-
-    if current < user_date < current_7:
-        return True
-    else:
-        return False
+    
